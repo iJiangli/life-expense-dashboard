@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人消费可视化 · 2026.10.22-11.22</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#141b31; --panel2:#1a2340; --line:#2b3560;
+  --tx:#e8eefc; --muted:#94a3c8; --accent:#5b8cff; --green:#37d9a3;
+  --orange:#ffb454; --pink:#ff6b9a; --purple:#a78bfa;
+  --shadow:0 10px 30px rgba(0,0,0,.35); --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,#1c2a55 0%,transparent 60%),var(--bg);color:var(--tx);
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.6;min-height:100vh}
+.wrap{max-width:1200px;margin:auto;padding:32px 20px 60px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px}
+h1{font-size:30px;letter-spacing:.5px}
+h1 .dot{color:var(--accent)}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.range-chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--muted)}
+.range-chip b{color:var(--tx)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:9px 18px;border-radius:10px;
+  cursor:pointer;font-size:14px;transition:.2s}
+.tab:hover{color:var(--tx);border-color:var(--accent)}
+.tab.on{background:linear-gradient(135deg,#3b6fe0,#5b8cff);color:#fff;border-color:transparent}
+.page{display:none;animation:fade .35s ease}
+.page.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.card h2{font-size:18px;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+.card h2 .ic{width:8px;height:18px;border-radius:4px;background:var(--accent);display:inline-block}
+.card .desc{color:var(--muted);font-size:13px;margin-bottom:18px}
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(91,140,255,.25),transparent 70%)}
+.kpi .label{color:var(--muted);font-size:13px}
+.kpi .val{font-size:30px;font-weight:700;margin-top:6px}
+.kpi .foot{font-size:12px;color:var(--muted);margin-top:6px}
+.kpi.green .val{color:var(--green)} .kpi.orange .val{color:var(--orange)} .kpi.pink .val{color:var(--pink)} .kpi.purple .val{color:var(--purple)}
+.map{display:flex;flex-direction:column;align-items:center;gap:0;padding:10px 0}
+.node{border:1.5px solid var(--line);background:var(--panel2);border-radius:14px;padding:14px 20px;text-align:center;min-width:250px;box-shadow:var(--shadow)}
+.node .t{font-size:13px;color:var(--muted)}
+.node .v{font-size:26px;font-weight:700;margin-top:2px}
+.node.root{background:linear-gradient(135deg,#24408f,#3b6fe0);border-color:#5b8cff;min-width:330px}
+.node.root .t,.node.root .v{color:#fff}
+.connector{width:2px;height:26px;background:linear-gradient(var(--line),var(--accent))}
+.branch{width:100%;display:flex;justify-content:center;gap:0;position:relative}
+.branch-line{position:absolute;top:0;left:25%;right:25%;height:2px;background:var(--accent);opacity:.55}
+.col{display:flex;flex-direction:column;align-items:center;gap:0;flex:1;position:relative;padding-top:16px}
+.col::before{content:"";position:absolute;top:0;width:2px;height:16px;background:var(--accent);opacity:.55}
+.col .node{min-width:0;width:92%;max-width:260px}
+.subnode{border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin-top:10px;width:92%;max-width:260px;font-size:13px;color:var(--muted);text-align:center}
+.subnode b{color:var(--tx)}
+.stem{width:2px;height:18px;background:var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.bar-row{display:grid;grid-template-columns:92px 1fr 78px;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+.bar-row .nm{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{background:#0d1428;border-radius:8px;height:18px;overflow:hidden}
+.bar-fill{height:100%;border-radius:8px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bar-row .amt{text-align:right;font-variant-numeric:tabular-nums}
+.stack{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:14px 0}
+.stack div{height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0b1020;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.chart{position:relative;height:260px;border-left:1px solid var(--line);border-bottom:1px solid var(--line);margin:20px 8px 28px 44px;padding-left:4px}
+.yl{position:absolute;left:-42px;font-size:11px;color:var(--muted);transform:translateY(50%)}
+.day{position:absolute;bottom:0;width:2.2%;min-width:6px;transform:translateX(-50%);display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer}
+.day .seg{width:100%;transition:height .7s ease}
+.day .food{background:linear-gradient(#5b8cff,#3b6fe0)}
+.day .other{background:linear-gradient(#ffb454,#ff8f4d);border-radius:5px 5px 0 0}
+.day:hover .seg{filter:brightness(1.35)}
+.day .lbl{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap}
+.day .tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#0d1428;border:1px solid var(--accent);
+  border-radius:8px;padding:6px 10px;font-size:11px;white-space:nowrap;z-index:5;pointer-events:none;text-align:center}
+.day:hover .tip{display:block}
+.tbl-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--panel2);color:var(--muted);position:sticky;top:0;z-index:2;font-weight:500}
+tr:hover td{background:rgba(91,140,255,.08)}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.est{color:var(--orange);border-color:#7a5a20;background:rgba(255,180,84,.1)}
+.bfast{font-size:12px;padding:2px 8px;border-radius:999px}
+.bfast.yes{color:var(--green);background:rgba(55,217,163,.12)}
+.bfast.no{color:var(--muted);background:rgba(148,163,200,.1)}
+.hl{color:var(--orange);font-weight:600}
+.note{color:var(--muted);font-size:12px;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filterbar input,.filterbar select{background:var(--panel2);border:1px solid var(--line);color:var(--tx);border-radius:9px;padding:8px 12px;font-size:13px;outline:none}
+.filterbar input:focus{border-color:var(--accent)}
+.alert{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.35);border-radius:12px;padding:14px 18px;color:#f5d6a5;font-size:13px;margin-bottom:16px}
+.alert b{color:var(--orange)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+.badge{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:11px;margin:0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>我的消费地图 <span class="dot">●</span></h1><div class="sub">把 32 天的日常开销，变成一眼看懂的结构</div></div>
+  <div class="range-chip">统计区间 <b>2026.10.22 — 11.22</b> ｜ 共 <b>32</b> 天</div>
+</header>
+<nav class="tabs">
+  <button class="tab on" data-p="overview">结构总览</button>
+  <button class="tab" data-p="categories">分类占比</button>
+  <button class="tab" data-p="daily">每日趋势</button>
+  <button class="tab" data-p="ledger">逐笔明细</button>
+  <button class="tab" data-p="notes">口径与备注</button>
+</nav>
+
+<section class="page on" id="overview">
+  <div class="grid kpis" id="kpis"></div>
+  <div class="card">
+    <h2><span class="ic"></span>资金流向结构图</h2>
+    <div class="desc">从总支出往下拆：吃喝 vs 非吃喝，再拆到具体分类。点击其他标签可看细节。</div>
+    <div class="map">
+      <div class="node root"><div class="t">周期内总支出（含估算）</div><div class="v">¥ 2,063.98</div></div>
+      <div class="connector"></div>
+      <div class="branch"><div class="branch-line"></div>
+        <div class="col"><div class="node"><div class="t">全部吃喝</div><div class="v" style="color:var(--accent)">¥ 999.48</div></div>
+          <div class="subnode">日均吃喝 <b>¥31.23</b> ｜ 约占总支出 <b>48.4%</b></div>
+          <div class="stem"></div>
+          <div class="subnode">正餐 ¥743.58 · 饮料饮水 ¥123 · 零食夜宵 ¥98.4 · 餐饮混合 ¥34.5</div></div>
+        <div class="col"><div class="node"><div class="t">非吃喝支出</div><div class="v" style="color:var(--orange)">¥ 1,064.50</div></div>
+          <div class="subnode">数码配件 ¥529 · 水电通信 ¥150 · 数字服务 ¥148 · 交通 ¥90 …</div>
+          <div class="stem"></div>
+          <div class="subnode">每日记录小计 ¥1,913.98 + 未分配水电通信 ¥150</div></div>
+      </div>
+      <div class="connector" style="background:var(--line)"></div>
+      <div class="subnode" style="max-width:520px">估算餐费 <b>9 次 × ¥13 = ¥117</b> 已计入；“估算”不等于实付确认</div>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card"><h2><span class="ic" style="background:var(--green)"></span>早餐习惯</h2>
+      <div class="desc">32 天里，早餐状态记录如下</div>
+      <div class="stack" id="bfastStack"></div>
+      <div class="legend" id="bfastLegend"></div>
+    </div>
+    <div class="card"><h2><span class="ic" style="background:var(--orange)"></span>支出构成</h2>
+      <div class="desc">吃喝与非吃喝的占比</div>
+      <div class="stack" id="splitStack"></div>
+      <div class="legend" id="splitLegend"></div>
+      <div style="margin-top:16px;font-size:13px;color:var(--muted)">日均总支出 <b style="color:var(--tx)">¥64.50</b> ｜ 日均吃喝 <b style="color:var(--tx)">¥31.23</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="categories">
+  <div class="card"><h2><span class="ic"></span>11 类支出排行</h2>
+    <div class="desc">按金额从高到低。数码配件与正餐是本期两大头。</div>
+    <div id="catBars"></div>
+  </div>
+  <div class="card"><h2><span class="ic" style="background:var(--purple)"></span>分类明细表</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>分类</th><th>金额（元）</th><th>占总支出</th><th>可视化</th></tr></thead><tbody id="catTable"></tbody></table></div>
+  </div>
+</section>
+
+<section class="page" id="daily">
+  <div class="card"><h2><span class="ic"></span>每日支出趋势（32 天）</h2>
+    <div class="desc">蓝色＝当天吃喝，橙色＝当天非吃喝；鼠标悬停看具体数字。11-08 与 11-18 两个尖峰来自数码配件。</div>
+    <div class="chart" id="chart"></div>
+    <div class="legend"><span><i style="background:#5b8cff"></i>吃喝</span><span><i style="background:#ffb454"></i>非吃喝</span></div>
+  </div>
+  <div class="card"><h2><span class="ic" style="background:var(--green)"></span>每日明细</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>日期</th><th>当日支出</th><th>吃喝</th><th>非吃喝</th><th>估算餐费</th><th>早餐</th><th>备注</th></tr></thead><tbody id="dailyTable"></tbody></table></div>
+  </div>
+</section>
+
+<section class="page" id="ledger">
+  <div class="card"><h2><span class="ic"></span>逐笔消费明细</h2>
+    <div class="desc">共 <b id="txCount"></b> 笔（含 9 笔估算餐费与 1 笔水电通信指定计入）。可搜索、按分类筛选。</div>
+    <div class="filterbar"><input id="q" placeholder="搜索项目 / 日期…" /><select id="catFilter"><option value="">全部分类</option></select></div>
+    <div class="tbl-wrap"><table><thead><tr><th>日期</th><th>分类</th><th>项目（脱敏）</th><th>金额</th><th>性质</th></tr></thead><tbody id="txTable"></tbody></table></div>
+  </div>
+</section>
+
+<section class="page" id="notes">
+  <div class="card"><h2><span class="ic" style="background:var(--orange)"></span>统计口径与待核对事项</h2>
+    <div class="alert" id="alertBox"></div>
+    <div id="notesList"></div>
+  </div>
+  <div class="card"><h2><span class="ic" style="background:var(--purple)"></span>隐私说明</h2>
+    <p style="color:var(--muted);font-size:14px">姓名、具体服务商与账号标识已去除；日期与金额仍属个人财务信息。本页面为个人生活记录，数据仅用于自我回顾。</p>
+    <div style="margin-top:14px"><span class="badge">付款支出 ≠ 当天消耗</span><span class="badge">估算≠实付</span><span class="badge">脱敏版</span></div>
+  </div>
+</section>
+
+<footer>数据生成于 2026-11-22 23:45 ｜ 个人消费记录 · 可视化版 ｜ 后续计划：每日在线填写 + 未填提醒</footer>
+</div>
+<script>
+const DATA={"metrics":{"统计区间":"2026-10-22 至 2026-11-22，含首尾32天","总支出（含估算）":2063.98,"日均总支出":64.5,"全部吃喝":999.48,"日均吃喝":31.23,"每日记录小计":1913.98,"未分配日期的水电通信":150,"补记餐费（9次，每次13元）":117,"早餐状态":"吃了5天；未吃27天","统计口径":"付款支出，不等于当天消耗；估算不是实付确认","注意":"每日小计1913.98元，加期间水电通信150元，等于总支出2063.98元","隐私":"姓名、具体服务商和账号标识已去除，日期金额仍属个人财务信息"},"categories":[{"name":"正餐","amount":743.58},{"name":"衣物","amount":44.0},{"name":"饮料饮水","amount":123.0},{"name":"日用","amount":71.0},{"name":"餐饮混合","amount":34.5},{"name":"数字服务","amount":148.0},{"name":"零食夜宵","amount":98.4},{"name":"生活服务","amount":32.5},{"name":"交通","amount":90.0},{"name":"数码配件","amount":529.0},{"name":"水电通信","amount":150.0}],"days":[{"date":"2026-10-22","total":146.0,"meal":26.0,"food":56.0,"nonfood":90.0,"estimate":13.0,"breakfast":"未吃","note":""},{"date":"2026-10-23","total":43.0,"meal":13.0,"food":33.0,"nonfood":10.0,"estimate":13.0,"breakfast":"吃了","note":"泡面按正餐，不额外补午餐；餐饮20元与虚拟服务器10元暂按原记录分开计，6+14分项未明确。"},{"date":"2026-10-24","total":56.5,"meal":23.0,"food":42.0,"nonfood":14.5,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-10-25","total":20.0,"meal":20.0,"food":20.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-10-26","total":15.0,"meal":15.0,"food":15.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-10-27","total":75.0,"meal":29.0,"food":45.0,"nonfood":30.0,"estimate":26.0,"breakfast":"吃了","note":""},{"date":"2026-10-28","total":39.8,"meal":19.8,"food":19.8,"nonfood":20.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-10-29","total":65.0,"meal":33.0,"food":65.0,"nonfood":0.0,"estimate":13.0,"breakfast":"吃了","note":""},{"date":"2026-10-30","total":66.0,"meal":24.0,"food":41.0,"nonfood":25.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-10-31","total":52.0,"meal":22.0,"food":22.0,"nonfood":30.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-01","total":50.0,"meal":20.0,"food":20.0,"nonfood":30.0,"estimate":13.0,"breakfast":"未吃","note":""},{"date":"2026-11-02","total":27.0,"meal":27.0,"food":27.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-03","total":23.0,"meal":23.0,"food":23.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-04","total":32.9,"meal":22.9,"food":22.9,"nonfood":10.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-05","total":22.5,"meal":22.5,"food":22.5,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-06","total":25.0,"meal":25.0,"food":25.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-07","total":39.4,"meal":26.0,"food":39.4,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-08","total":278.0,"meal":20.0,"food":20.0,"nonfood":258.0,"estimate":13.0,"breakfast":"未吃","note":""},{"date":"2026-11-09","total":119.5,"meal":27.5,"food":42.5,"nonfood":77.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-10","total":25.38,"meal":25.38,"food":25.38,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-11","total":18.5,"meal":18.5,"food":18.5,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-12","total":35.0,"meal":20.0,"food":20.0,"nonfood":15.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-13","total":16.0,"meal":16.0,"food":16.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-14","total":20.0,"meal":20.0,"food":20.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-15","total":37.6,"meal":23.1,"food":37.6,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":"夜宵、牛奶、三瓶功能饮料合计14.50元，未拆分。"},{"date":"2026-11-16","total":107.7,"meal":37.7,"food":67.7,"nonfood":40.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-17","total":22.0,"meal":22.0,"food":22.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-18","total":277.0,"meal":25.0,"food":25.0,"nonfood":252.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-19","total":26.0,"meal":26.0,"food":26.0,"nonfood":0.0,"estimate":0.0,"breakfast":"未吃","note":""},{"date":"2026-11-20","total":27.0,"meal":27.0,"food":27.0,"nonfood":0.0,"estimate":13.0,"breakfast":"吃了","note":""},{"date":"2026-11-21","total":88.2,"meal":26.2,"food":75.2,"nonfood":13.0,"estimate":0.0,"breakfast":"吃了","note":""},{"date":"2026-11-22","total":18.0,"meal":18.0,"food":18.0,"nonfood":0.0,"estimate":13.0,"breakfast":"未吃","note":""}],"txns":[{"date":"2026-10-22","category":"正餐","item":"晚餐","amount":13.0,"kind":"已记录"},{"date":"2026-10-22","category":"衣物","item":"内裤4条","amount":34.0,"kind":"已记录"},{"date":"2026-10-22","category":"饮料饮水","item":"功能饮料10瓶","amount":30.0,"kind":"已记录"},{"date":"2026-10-22","category":"日用","item":"脸盆","amount":9.0,"kind":"已记录"},{"date":"2026-10-22","category":"日用","item":"牙膏","amount":16.0,"kind":"已记录"},{"date":"2026-10-22","category":"日用","item":"洗衣粉","amount":11.0,"kind":"已记录"},{"date":"2026-10-22","category":"日用","item":"褥子","amount":20.0,"kind":"已记录"},{"date":"2026-10-22","category":"正餐","item":"午餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-10-23","category":"餐饮混合","item":"早餐、正餐泡面和水（合计20元，6+14未拆分）","amount":20.0,"kind":"已记录"},{"date":"2026-10-23","category":"数字服务","item":"虚拟服务器购买/充值","amount":10.0,"kind":"已记录"},{"date":"2026-10-23","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-10-24","category":"数字服务","item":"AI服务充值","amount":10.0,"kind":"已记录"},{"date":"2026-10-24","category":"正餐","item":"午餐","amount":13.0,"kind":"已记录"},{"date":"2026-10-24","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-10-24","category":"零食夜宵","item":"鸭头鸭脖","amount":19.0,"kind":"已记录"},{"date":"2026-10-24","category":"生活服务","item":"洗衣服","amount":4.5,"kind":"已记录"},{"date":"2026-10-25","category":"正餐","item":"午餐","amount":10.0,"kind":"已记录"},{"date":"2026-10-25","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-10-26","category":"正餐","item":"午餐","amount":10.0,"kind":"已记录"},{"date":"2026-10-26","category":"正餐","item":"晚餐","amount":5.0,"kind":"已记录"},{"date":"2026-10-27","category":"正餐","item":"早餐","amount":3.0,"kind":"已记录"},{"date":"2026-10-27","category":"饮料饮水","item":"买水","amount":16.0,"kind":"已记录"},{"date":"2026-10-27","category":"交通","item":"打车","amount":30.0,"kind":"已记录"},{"date":"2026-10-27","category":"正餐","item":"午餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-10-27","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-10-28","category":"数字服务","item":"AI服务充值","amount":20.0,"kind":"已记录"},{"date":"2026-10-28","category":"正餐","item":"午餐","amount":13.8,"kind":"已记录"},{"date":"2026-10-28","category":"正餐","item":"晚餐","amount":6.0,"kind":"已记录"},{"date":"2026-10-29","category":"饮料饮水","item":"功能饮料","amount":32.0,"kind":"已记录"},{"date":"2026-10-29","category":"正餐","item":"早餐","amount":5.0,"kind":"已记录"},{"date":"2026-10-29","category":"正餐","item":"中餐","amount":15.0,"kind":"已记录"},{"date":"2026-10-29","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-10-30","category":"正餐","item":"中餐","amount":14.0,"kind":"已记录"},{"date":"2026-10-30","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-10-30","category":"生活服务","item":"理发","amount":25.0,"kind":"已记录"},{"date":"2026-10-30","category":"零食夜宵","item":"薯片","amount":17.0,"kind":"已记录"},{"date":"2026-10-31","category":"交通","item":"回家车费","amount":30.0,"kind":"已记录"},{"date":"2026-10-31","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-10-31","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-11-01","category":"交通","item":"车费","amount":30.0,"kind":"已记录"},{"date":"2026-11-01","category":"正餐","item":"晚餐","amount":7.0,"kind":"已记录"},{"date":"2026-11-01","category":"正餐","item":"午餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-11-02","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-02","category":"正餐","item":"晚餐","amount":15.0,"kind":"已记录"},{"date":"2026-11-03","category":"正餐","item":"午餐","amount":15.0,"kind":"已记录"},{"date":"2026-11-03","category":"正餐","item":"晚餐","amount":8.0,"kind":"已记录"},{"date":"2026-11-04","category":"正餐","item":"午餐","amount":11.5,"kind":"已记录"},{"date":"2026-11-04","category":"正餐","item":"晚餐","amount":11.4,"kind":"已记录"},{"date":"2026-11-04","category":"数字服务","item":"AI服务充值","amount":10.0,"kind":"已记录"},{"date":"2026-11-05","category":"正餐","item":"午餐","amount":12.5,"kind":"已记录"},{"date":"2026-11-05","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-11-06","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-06","category":"正餐","item":"晚餐","amount":13.0,"kind":"已记录"},{"date":"2026-11-07","category":"正餐","item":"午餐","amount":14.5,"kind":"已记录"},{"date":"2026-11-07","category":"正餐","item":"晚餐","amount":11.5,"kind":"已记录"},{"date":"2026-11-07","category":"零食夜宵","item":"夜宵","amount":13.4,"kind":"已记录"},{"date":"2026-11-08","category":"数码配件","item":"键盘套件","amount":200.0,"kind":"已记录"},{"date":"2026-11-08","category":"正餐","item":"午餐泡面","amount":7.0,"kind":"已记录"},{"date":"2026-11-08","category":"数字服务","item":"虚拟服务器购买/充值","amount":8.0,"kind":"已记录"},{"date":"2026-11-08","category":"数字服务","item":"AI服务充值","amount":50.0,"kind":"已记录"},{"date":"2026-11-08","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-11-09","category":"正餐","item":"午餐","amount":13.5,"kind":"已记录"},{"date":"2026-11-09","category":"正餐","item":"晚餐","amount":14.0,"kind":"已记录"},{"date":"2026-11-09","category":"饮料饮水","item":"功能饮料","amount":15.0,"kind":"已记录"},{"date":"2026-11-09","category":"数码配件","item":"轴体","amount":57.0,"kind":"已记录"},{"date":"2026-11-09","category":"数码配件","item":"键帽","amount":20.0,"kind":"已记录"},{"date":"2026-11-10","category":"正餐","item":"午餐","amount":13.38,"kind":"已记录"},{"date":"2026-11-10","category":"正餐","item":"晚餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-11","category":"正餐","item":"午餐","amount":13.5,"kind":"已记录"},{"date":"2026-11-11","category":"正餐","item":"晚餐","amount":5.0,"kind":"已记录"},{"date":"2026-11-12","category":"日用","item":"润唇膏","amount":15.0,"kind":"已记录"},{"date":"2026-11-12","category":"正餐","item":"午餐","amount":14.0,"kind":"已记录"},{"date":"2026-11-12","category":"正餐","item":"晚餐","amount":6.0,"kind":"已记录"},{"date":"2026-11-13","category":"正餐","item":"午餐","amount":10.0,"kind":"已记录"},{"date":"2026-11-13","category":"正餐","item":"晚餐","amount":6.0,"kind":"已记录"},{"date":"2026-11-14","category":"正餐","item":"午餐","amount":14.0,"kind":"已记录"},{"date":"2026-11-14","category":"正餐","item":"晚餐","amount":6.0,"kind":"已记录"},{"date":"2026-11-15","category":"正餐","item":"午餐","amount":12.5,"kind":"已记录"},{"date":"2026-11-15","category":"正餐","item":"晚餐","amount":10.6,"kind":"已记录"},{"date":"2026-11-15","category":"餐饮混合","item":"夜宵/牛奶/三瓶功能饮料","amount":14.5,"kind":"已记录"},{"date":"2026-11-16","category":"正餐","item":"午餐（本人请客支付，无分摊）","amount":28.0,"kind":"已记录"},{"date":"2026-11-16","category":"正餐","item":"晚餐","amount":9.7,"kind":"已记录"},{"date":"2026-11-16","category":"饮料饮水","item":"网购功能饮料10瓶","amount":30.0,"kind":"已记录"},{"date":"2026-11-16","category":"数字服务","item":"账号购买","amount":40.0,"kind":"已记录"},{"date":"2026-11-17","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-17","category":"正餐","item":"晚餐","amount":10.0,"kind":"已记录"},{"date":"2026-11-18","category":"正餐","item":"午餐","amount":11.5,"kind":"已记录"},{"date":"2026-11-18","category":"正餐","item":"晚餐","amount":13.5,"kind":"已记录"},{"date":"2026-11-18","category":"数码配件","item":"自费配件（具体用途未细分）","amount":252.0,"kind":"已记录"},{"date":"2026-11-19","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-19","category":"正餐","item":"晚餐","amount":14.0,"kind":"已记录"},{"date":"2026-11-20","category":"正餐","item":"早餐预制包子","amount":2.0,"kind":"已记录"},{"date":"2026-11-20","category":"正餐","item":"午餐","amount":12.0,"kind":"已记录"},{"date":"2026-11-20","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"2026-11-21","category":"正餐","item":"早餐鸡蛋","amount":1.0,"kind":"已记录"},{"date":"2026-11-21","category":"正餐","item":"午餐","amount":12.7,"kind":"已记录"},{"date":"2026-11-21","category":"正餐","item":"晚餐","amount":12.5,"kind":"已记录"},{"date":"2026-11-21","category":"生活服务","item":"洗衣服","amount":3.0,"kind":"已记录"},{"date":"2026-11-21","category":"衣物","item":"袜子","amount":10.0,"kind":"已记录"},{"date":"2026-11-21","category":"零食夜宵","item":"核桃","amount":22.0,"kind":"已记录"},{"date":"2026-11-21","category":"零食夜宵","item":"猪肉脯","amount":27.0,"kind":"已记录"},{"date":"2026-11-22","category":"正餐","item":"中午泡面","amount":5.0,"kind":"已记录"},{"date":"2026-11-22","category":"正餐","item":"晚餐（漏记，按指定标准估算）","amount":13.0,"kind":"估算"},{"date":"期间合计（日期未指定）","category":"水电通信","item":"水电费、手机费合计，按本人指定金额计入","amount":150.0,"kind":"指定计入，实付未核对"}],"notes":{"check":"","estimate":"","missing":""},"meta":{"range":"2026-10-22 至 2026-11-22","daysCount":32,"generated":"2026-11-22 23:45"}};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const yuan=n=>"¥"+Number(n).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(a,t)=>(a/t*100).toFixed(1)+"%";
+const m=DATA.metrics, total=m["总支出（含估算）"], food=m["全部吃喝"], nonfood=+(total-food).toFixed(2);
+$$(".tab").forEach(b=>b.onclick=()=>{$$(".tab").forEach(x=>x.classList.remove("on"));$$(".page").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("#"+b.dataset.p).classList.add("on");});
+const kpis=[
+ ["总支出（含估算）",yuan(total),"每日记录 + 水电通信",""],
+ ["日均总支出",yuan(m["日均总支出"]),"按 32 天平均","green"],
+ ["全部吃喝",yuan(food),"约 "+pct(food,total),"orange"],
+ ["非吃喝支出",yuan(nonfood),"约 "+pct(nonfood,total),"pink"],
+ ["估算餐费",yuan(m["补记餐费（9次，每次13元）"]),"9 次 × ¥13","purple"],
+ ["早餐记录","5 / 32 天","吃了 5 天，未吃 27 天",""]
+];
+$("#kpis").innerHTML=kpis.map(([l,v,f,c])=>'<div class="kpi '+c+'"><div class="label">'+l+'</div><div class="val">'+v+'</div><div class="foot">'+f+'</div></div>').join("");
+function stack(elId,legendId,parts){
+  $("#"+elId).innerHTML=parts.map(p=>'<div style="width:'+p.p+'%;background:'+p.c+'" title="'+p.n+' '+p.pct+'">'+(p.p>9?p.n:"")+'</div>').join("");
+  $("#"+legendId).innerHTML=parts.map(p=>'<span><i style="background:'+p.c+'"></i>'+p.n+' '+p.pct+'</span>').join("");
+}
+const bf=DATA.days.filter(d=>d.breakfast==="吃了").length, bn=DATA.days.length-bf;
+stack("bfastStack","bfastLegend",[{n:"吃了",p:bf/DATA.days.length*100,pct:bf+" 天",c:"#37d9a3"},{n:"未吃",p:bn/DATA.days.length*100,pct:bn+" 天",c:"#3b4570"}]);
+stack("splitStack","splitLegend",[{n:"吃喝",p:food/total*100,pct:yuan(food),c:"#5b8cff"},{n:"非吃喝",p:nonfood/total*100,pct:yuan(nonfood),c:"#ffb454"}]);
+const cats=[...DATA.categories].sort((a,b)=>b.amount-a.amount);
+const palette=["#5b8cff","#ffb454","#a78bfa","#37d9a3","#ff6b9a","#4dd0e1","#facc15","#fb923c","#818cf8","#34d399","#f472b6"];
+$("#catBars").innerHTML=cats.map((c,i)=>'<div class="bar-row"><div class="nm" title="'+c.name+'">'+c.name+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(c.amount/cats[0].amount*100)+'%;background:linear-gradient(90deg,'+palette[i%palette.length]+','+palette[(i+1)%palette.length]+')"></div></div><div class="amt">'+yuan(c.amount)+'</div></div>').join("");
+$("#catTable").innerHTML=cats.map((c,i)=>'<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+palette[i%palette.length]+';margin-right:8px"></i>'+c.name+'</td><td>'+yuan(c.amount)+'</td><td>'+pct(c.amount,total)+'</td><td><div style="background:#0d1428;border-radius:5px;height:9px;width:160px"><div style="height:100%;width:'+(c.amount/cats[0].amount*100)+'%;border-radius:5px;background:'+palette[i%palette.length]+'"></div></div></td></tr>').join("");
+const max=Math.max(...DATA.days.map(d=>d.total));
+$("#chart").innerHTML=[0,.25,.5,.75,1].map(t=>'<div class="yl" style="bottom:'+(t*100)+'%">'+(max*t).toFixed(0)+'</div>').join("")+DATA.days.map((d,i)=>{
+ const fh=d.food/max*100, oh=d.nonfood/max*100;
+ return '<div class="day" style="left:'+((i+.5)/DATA.days.length*100)+'%"><div class="tip">'+d.date+'<br>合计 '+yuan(d.total)+'<br>吃喝 '+yuan(d.food)+' · 非吃喝 '+yuan(d.nonfood)+(d.estimate?'<br>含估算 '+yuan(d.estimate):'')+'</div><div class="seg food" style="height:'+fh+'%"></div><div class="seg other" style="height:'+oh+'%"></div><span class="lbl">'+d.date.slice(5).replace("-","/")+'</span></div>';
+}).join("");
+$("#dailyTable").innerHTML=DATA.days.map(d=>'<tr><td>'+d.date+'</td><td><b>'+yuan(d.total)+'</b></td><td style="color:var(--accent)">'+yuan(d.food)+'</td><td style="color:var(--orange)">'+yuan(d.nonfood)+'</td><td>'+(d.estimate?'<span class="hl">'+yuan(d.estimate)+'</span>':"—")+'</td><td><span class="bfast '+(d.breakfast==="吃了"?"yes":"no")+'">'+d.breakfast+'</span></td><td class="note" title="'+d.note.replace(/"/g,"&quot;")+'">'+(d.note||"—")+'</td></tr>').join("");
+const catsSet=[...new Set(DATA.txns.map(t=>t.category))];
+$("#catFilter").innerHTML='<option value="">全部分类</option>'+catsSet.map(c=>'<option value="'+c+'">'+c+'</option>').join("");
+$("#txCount").textContent=DATA.txns.length;
+function renderTx(){
+ const q=$("#q").value.trim(), cf=$("#catFilter").value;
+ const rows=DATA.txns.filter(t=>(!cf||t.category===cf)&&(!q||t.item.includes(q)||t.date.includes(q)||t.category.includes(q)));
+ $("#txTable").innerHTML=rows.map(t=>'<tr><td>'+t.date+'</td><td>'+t.category+'</td><td>'+t.item+'</td><td><b>'+yuan(t.amount)+'</b></td><td><span class="tag '+(t.kind==="估算"?"est":"")+'">'+t.kind+'</span></td></tr>').join("");
+}
+$("#q").oninput=renderTx;$("#catFilter").onchange=renderTx;renderTx();
+$("#alertBox").innerHTML='<b>统计口径：</b>'+m["统计口径"]+'<br><b>注意：</b>'+m["注意"];
+$("#notesList").innerHTML='<div class="card" style="box-shadow:none;margin-bottom:12px"><b>待核对</b><div style="color:var(--muted);font-size:13px;margin-top:6px">'+DATA.notes.check+'</div></div>'+
+'<div class="card" style="box-shadow:none;margin-bottom:12px"><b>餐费估算</b><div style="color:var(--muted);font-size:13px;margin-top:6px">'+DATA.notes.estimate+'</div></div>'+
+'<div class="card" style="box-shadow:none"><b>未补项目</b><div style="color:var(--muted);font-size:13px;margin-top:6px">'+DATA.notes.missing+'</div></div>';
+</script>
+</body>
+</html>
